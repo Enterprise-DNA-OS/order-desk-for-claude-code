@@ -1,115 +1,101 @@
-<h1 align="center">Order Desk for Claude Code</h1>
+# Order Desk for Claude Code
 
-<p align="center">
-  <strong>The open-source merchant order desk that is just a database and Claude Code.</strong>
-</p>
+Find the order that missed its dispatch date, the parcel without delivery evidence and the return waiting for a decision. Keep your merchant order desk in a database you own. MIT licensed. Built by Enterprise DNA.
 
-<p align="center">
-  Created by <a href="https://www.enterprisedna.co"><strong>Enterprise DNA</strong></a>. Free and open source. Works with Claude Code, Codex, OpenCode or Cursor.
-</p>
+| Do it yourself | We customise it | We run it for you |
+|---|---|---|
+| Free. Install, test, then import your orders. | Your channels, rules, paperwork and connections. One setup fee, then a retainer. | Installed and operated through Omni by Enterprise DNA. One setup fee, then a retainer. |
+| [Quick start](#quick-start) | [Get your version built](https://enterprisedna.co/omni/book/?offer=replace-software&utm_campaign=goflow&utm_medium=readme) | [Talk to Sam](https://enterprisedna.co/omni/book/?offer=replace-software&utm_campaign=goflow&utm_medium=readme) |
 
-<!-- three-doors -->
-<table align="center">
-  <tr>
-    <td align="center"><strong>Do it yourself</strong><br/>Clone it, run it, own it. Free, MIT.<br/><a href="#quick-start">Quick start</a></td>
-    <td align="center"><strong>We customise it</strong><br/>Your fields, your rules, your Goflow data brought across.<br/><a href="https://enterprisedna.co/omni/book/?utm_source=github&utm_medium=readme&utm_campaign=goflow">Book a call</a></td>
-    <td align="center"><strong>We run it for you</strong><br/>Installed, connected and operated inside Omni. Setup fee, then a retainer.<br/><a href="https://enterprisedna.co/omni/instead-of/goflow?utm_source=github&utm_medium=readme&utm_campaign=goflow">How it works</a></td>
-  </tr>
-</table>
-
-<p align="center">
-  <a href="#what-is-this">What is this</a> &bull;
-  <a href="#why-no-front-end">Why no front end</a> &bull;
-  <a href="#quick-start">Quick start</a> &bull;
-  <a href="#the-commands">Commands</a> &bull;
-  <a href="#instead-of-goflow">Instead of Goflow</a> &bull;
-  <a href="#want-it-installed-and-run-for-you">Installed for you</a> &bull;
-  <a href="#license">License</a>
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Node-20+-339933?style=flat-square" alt="Node 20+" />
-  <img src="https://img.shields.io/badge/PostgreSQL-any-336791?style=flat-square" alt="PostgreSQL" />
-  <img src="https://img.shields.io/badge/PGlite-embedded-3ecf8e?style=flat-square" alt="PGlite" />
-  <img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square" alt="MIT License" />
-</p>
-
----
-
-## What is this
-
-Order Desk for Claude Code does the job you pay Goflow for, as a Postgres database and a set of agent commands. There is no web front end. You open the folder in [Claude Code](https://claude.com/claude-code) (or Codex, OpenCode, Cursor: see `AGENTS.md`) and ask for what you want in plain language. It runs the right query, and it can answer questions the Goflow dashboard cannot.
-
-<!-- TODO(author): the annual bill. One sentence: what a 10 to 50 person business typically pays Goflow per year, all in, with a source. -->
-
-Want the same thing with a web front end, or built on a different stack? That is a customisation, and it is exactly what Enterprise DNA does: [book a call](https://enterprisedna.co/omni/book/?utm_source=github&utm_medium=readme&utm_campaign=goflow).
-
-<!-- TODO(author): two or three sentences on what this specific product covers and who it is for. -->
-
-## Why no front end
-
-- The front end was only ever there because the database was hard to talk to. That is no longer true.
-- Your data sits in plain Postgres tables you own. Any tool can read them. No export, no lock-in.
-- No seats, no tiers, no add-ons. Read [docs/why-no-front-end.md](docs/why-no-front-end.md) for the honest trade-offs too.
+Goflow's pricing calculator lists Thriving at US$2,249 per month, equivalent to US$26,988 across twelve months, before extras. This is a public plan comparison, not a customer invoice or a savings guarantee. [Vendor pricing](https://goflow.com/pricing), checked 19 October 2026. This base covers the merchant's order desk. Goflow's wider platform includes connections and warehouse functions that are separate implementation work.
 
 ## Quick start
 
-Sixty seconds, no database install (an embedded Postgres runs inside Node):
+Use Node 22 or later.
 
 ```bash
 git clone https://github.com/Enterprise-DNA-OS/order-desk-for-claude-code.git
 cd order-desk-for-claude-code
 npm install
+npm test
 npm run demo
 ```
 
-Then open the folder in Claude Code and type a slash command. <!-- TODO(author): name the first command to try. -->
+The demo uses a fresh temporary PGlite database, ignores DATABASE_URL, renders documents and views, and removes the demo when it finishes. To inspect the files, run npm run demo -- --keep. For a persistent fictional workspace run npm run migrate, then npm run seed. Never seed a business workspace.
 
-### Use it with your own Postgres or Supabase
+For a real business start with an empty database:
 
-Copy `.env.example` to `.env`, set `DATABASE_URL`, then `npm run migrate`. Same commands, shared data, no per-seat fee.
-
-## The commands
-
-<!-- TODO(author): a table of the slash commands in .claude/commands and what each one does. -->
-
-| Command | What it does |
-|---|---|
-| `/...` | ... |
-
-## Instead of goflow
-
-<!-- TODO(author): how to bring data across from Goflow; link docs/replace-goflow.md -->
-
-## Architecture
-
-```
-order-desk-for-claude-code/
-  CLAUDE.md                 how the operator wants this run (routing table + house rules)
-  AGENTS.md                 the same, for Codex / OpenCode / Cursor / Gemini CLI
-  .claude/commands/         the slash commands
-  scripts/                  the CLI the commands drive
-  scripts/lib/db.mjs        one adapter: DATABASE_URL (pg) or embedded PGlite
-  supabase/migrations/      plain SQL schema
-  supabase/seed.sql         demo data
-  docs/                     the thesis and the migration guide
+```bash
+npm run migrate
+node scripts/orders.mjs init "Your business" --actor="Your name"
+node scripts/orders.mjs add-channel "Web Store" --actor="Your name"
 ```
 
-## Built for coding agents
+DATABASE_URL selects private Postgres. Without it, PGlite stores the database in .data/db. Remote TLS verifies certificates. One business and one trusted operator per database. This is local administration, with no public service or authenticated team permissions. Actor names are supplied labels. Protect the folder and database credentials through your operating system. Open the folder in Claude Code, Codex, OpenCode or Cursor and describe the job. The software makes no model calls.
 
-The database, CLI and command recipes work with Claude Code, Codex, OpenCode or Cursor. Ask your coding agent for a new command and have it implement and test the change against the same records.
+## Five weekly rituals
 
-## Contributing
+- /dispatch: review unshipped quantities and holds before the dispatch cut-off.
+- /promises: find agreed delivery dates that passed without complete delivery evidence.
+- /returns-due: review open returns and decide who needs to act.
+- /attention: assign overdue order and follow-up work.
+- /weekly-review: draft the Monday review from attention, dispatch and returns.
 
-Issues and pull requests are welcome. Keep the shape: plain SQL, a small CLI, a slash command per recurring job, no front end.
+[CLI reference](docs/cli.md). Every command supports --json. Unique identifier prefixes and case-insensitive names work. Ambiguous matches list candidates and exit with an error. Full line IDs avoid ambiguity when several orders use line number 1.
 
-## Want it installed and run for you?
+## Bring your Goflow orders
 
-Enterprise DNA installs Order Desk for Claude Code for your business, migrates your Goflow data, connects it to the rest of your tools, and runs it for you as part of **Omni**, our managed Command Center. One setup fee, then a monthly retainer.
+Choose a custom line-level order export in Goflow and map its headers. The included CSV is fictional, with documented configurable headers. It is not a captured customer export.
 
-- Book a call: [enterprisedna.co/omni/book](https://enterprisedna.co/omni/book/?offer=replace-software&utm_source=github&utm_medium=readme&utm_campaign=goflow)
-- Read more: [enterprisedna.co/omni/instead-of/goflow](https://enterprisedna.co/omni/instead-of/goflow?utm_source=github&utm_medium=readme&utm_campaign=goflow)
+```bash
+node scripts/orders.mjs import goflow examples/goflow-lines.csv --dry-run --actor="Your name"
+```
 
-## License
+Then repeat without --dry-run. Use --map=examples/column-map.json for different headings. The entire file succeeds or rolls back. Identical source records are skipped on repeat import. Changed or incomplete versions of an existing order fail for reconciliation. Every new imported order starts on hold. Existing shipped quantities are opening balances, not invented delivery records. Resolve that history before releasing an order.
 
-MIT. Copyright (c) 2026 Enterprise DNA.
+[Switching guide](docs/replace-goflow.md) explains the mapping, quantity checks and what needs a separate export. A clean, reviewed CSV imports in one command. Delivery evidence, return history and channel connections need separate reconciliation. Complete that before retiring your current system.
+
+## Documents and read-only views
+
+Set your business name, logo and colours in brand.json. npm run docs produces order handovers, dispatch dockets and return reviews. npm run view produces the weekly desk, delivery promises and returns dashboards. These are HTML snapshots for internal use, with no action buttons. /new-view adds a report. /draft-update writes an internal briefing in drafts/. Nothing sends, buys labels, updates a marketplace or moves money.
+
+## Ten questions answered from your own records
+
+/insights answers these today. They combine the records in this base. They are not assertions that Goflow cannot produce a custom report.
+1. Which overdue orders are still on hold?
+2. Which customers have partial dispatches past their ship date?
+3. Which channels have overdue unshipped units?
+4. Which dispatched orders still lack full delivery evidence?
+5. Which products have unresolved returns?
+6. Which owners have overdue follow-ups?
+7. Which orders have retention dates below the recorded tax-year floor?
+8. Which channel and currency combinations carry unshipped value?
+9. Which imported shipments need delivery reconciliation?
+10. Which returned orders have no open follow-up task?
+
+## Your first hour: ten things to ask for
+
+1. Show which overdue orders are held and why.
+2. Find partial dispatches that need another parcel.
+3. Split unshipped value by channel and currency.
+4. Record the dispatch docket for two units of an order line.
+5. Record delivery only after the carrier evidence is checked.
+6. Open a return for a damaged unit.
+7. Record a refund request without issuing a refund.
+8. Assign an owner to an overdue follow-up.
+9. Put our name and colours on the Monday review.
+10. Add our purchase-order reference through /customise.
+
+## Boundaries and records
+
+Shipments cannot exceed the remaining units, cancellations cannot consume shipped units, and return cases cannot exceed shipped units. Holds block dispatch. Delivery requires an evidence reference. Returns retain their decision and reason. Refund-requested records a decision for finance to execute elsewhere. Replacement and repair decisions do not create another order automatically. The system does not track stock availability, allocate warehouse bins or reconcile payments.
+
+The NZ checks flag missed recorded delivery dates and missing or short record-retention dates. They do not decide legal remedies, certify compliance or decide what a reasonable delivery time is. AU consumer and tax rules need separate configuration before use. [Compliance rules and sources](docs/compliance.md).
+
+Source dates use YYYY-MM-DD. Monetary amounts are integer cents with an explicit currency. Reports group currencies separately and never add them together. Product unit prices exclude any separately charged freight, tax or discounts; include those in your accounting system. This is not a tax invoice or a general ledger.
+
+Audit events are append-only through a database trigger. A database owner can bypass controls. There is no deletion command. Back up the database, test restoration and review retention with the operator. JSON export is a portable record archive, not an automatic restore tool. Keep real imports, exports, drafts and credentials out of git. [Scope and limits](docs/why-no-front-end.md).
+
+## Verification
+
+npm test exercises every CLI operation, import rollback, repeated imports, invalid quantities, holds, delivery evidence, return decisions, currency separation, drafts and HTML escaping. The GitHub workflow runs Node 22 on Windows and Linux. See docs/verification.md for the checks actually completed in this build.

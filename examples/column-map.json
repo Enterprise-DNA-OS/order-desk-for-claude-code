@@ -1,0 +1,12 @@
+{
+  "reference": "Order Number",
+  "channel": "Store",
+  "line": "Line ID",
+  "sku": "Item Number",
+  "quantity": "Quantity",
+  "unit": "Unit Price",
+  "customer": "Customer",
+  "currency": "Currency",
+  "ordered": "Order Date",
+  "status": "Status"
+}

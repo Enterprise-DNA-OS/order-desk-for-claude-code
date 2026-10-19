@@ -1,0 +1,20 @@
+[
+  {
+    "title": "Dispatch desk",
+    "ask": "Which orders still need dispatching?",
+    "command": "node scripts/orders.mjs dispatch",
+    "output": "  reference  channel         ship by     remaining  status   hold reason             \n  ---------  --------------  ----------  ---------  -------  ------------------------\n  WEB-1041   Web Store       2026-10-11  4          partial                          \n  AU-2098    Marketplace AU  2026-10-15  3          held     Confirm delivery address\n  WEB-1043   Web Store       2026-10-20  5          open                             \n"
+  },
+  {
+    "title": "Delivery promises",
+    "ask": "Which delivery promises need checking?",
+    "command": "node scripts/orders.mjs promises",
+    "output": "  reference  channel         deliver by  shipped  delivered  imported shipped\n  ---------  --------------  ----------  -------  ---------  ----------------\n  WEB-1041   Web Store       2026-10-14  4        0          0               \n  AU-2098    Marketplace AU  2026-10-18  0        0          0               \n"
+  },
+  {
+    "title": "Returns review",
+    "ask": "Which returns are waiting for a decision?",
+    "command": "node scripts/orders.mjs returns-due",
+    "output": "  reference  sku     quantity  reason                  review by \n  ---------  ------  --------  ----------------------  ----------\n  WEB-1042   MUG-01  1         Mug chipped in transit  2026-10-17\n"
+  }
+]

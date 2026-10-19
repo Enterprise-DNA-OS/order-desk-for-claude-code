@@ -1,0 +1,19 @@
+{
+  "checked": "2026-10-19",
+  "source": "https://goflow.com/pricing",
+  "method": "Public HTML calculator plan configuration, retrieved with curl. Browser rendering also checked.",
+  "plan": {
+    "id": "Thriving",
+    "slug": "thriving",
+    "title": "Thriving",
+    "price": 2249,
+    "retailOrders": 25000,
+    "wholesaleOrders": 200,
+    "retailOverageInCents": 20,
+    "wholesaleOverageInCents": 500
+  },
+  "currency": "USD",
+  "per": "month",
+  "annualised": 26988,
+  "observed_customer_invoice": false
+}

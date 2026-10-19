@@ -1,13 +1,38 @@
 [
   {
     "name": "week",
-    "title": "This week",
-    "subtitle": "Order Desk for Claude Code: what needs attention, rendered by npm run view",
+    "title": "Weekly order desk",
+    "subtitle": "Fictional data when using the demo. Snapshot only, confirm freshness before acting.",
     "sections": [
       {
-        "title": "Needs attention",
-        "note": "TODO(author): point this at the industry's attention view (overdue, stuck, quiet).",
-        "sql": "select 'replace me' as item, 'TODO(author)' as why"
+        "title": "Dispatch queue",
+        "sql": "select reference,channel,ship_by,remaining,status,hold_reason from dispatch_queue"
+      },
+      {
+        "title": "Attention",
+        "sql": "select reference,issue,due_on from attention_queue order by due_on,reference"
+      }
+    ]
+  },
+  {
+    "name": "promises",
+    "title": "Delivery promises",
+    "subtitle": "A missing delivery record is a request for evidence, not proof of a failed delivery.",
+    "sections": [
+      {
+        "title": "Overdue promises",
+        "sql": "select reference,channel,deliver_by,shipped,delivered,imported_shipped from promises_due"
+      }
+    ]
+  },
+  {
+    "name": "returns",
+    "title": "Returns review",
+    "subtitle": "Decisions remain with the operator. Refund requests never move money.",
+    "sections": [
+      {
+        "title": "Open return cases",
+        "sql": "select reference,sku,quantity,reason,review_by from returns_queue"
       }
     ]
   }

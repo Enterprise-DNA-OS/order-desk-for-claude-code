@@ -1,0 +1,4 @@
+Order Number,Store,Line ID,Item Number,Product Name,Quantity,Unit Price,Customer,Currency,Order Date,Ship By,Deliver By,Status,Shipped Quantity,Cancelled Quantity,Tax Year End,Retain Until
+GF-1001,Demo Outlet,A,MUG-01,Stoneware mug,3,24.00,Example Buyer,NZD,2026-10-01,2026-10-03,2026-10-06,Open,0,0,2027-03-31,2034-03-31
+GF-1001,Demo Outlet,B,BOWL-02,Serving bowl,2,55.00,Example Buyer,NZD,2026-10-01,2026-10-03,2026-10-06,Open,0,0,2027-03-31,2034-03-31
+GF-1002,Demo Outlet,A,TRAY-03,Timber tray,1,48.00,Example Buyer Two,AUD,2026-09-29,2026-09-30,2026-10-04,Shipped,1,0,2027-03-31,2034-03-31

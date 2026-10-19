@@ -1,0 +1,87 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {spawnSync} from 'node:child_process';
+import {getDb,REPO_ROOT} from './lib/db.mjs';
+import {migrate} from './migrate.mjs';
+import {seed} from './seed.mjs';
+import {run,help,cents,date} from './lib/domain.mjs';
+import {parseCsv} from './lib/csv.mjs';
+const dir=fs.mkdtempSync(path.join(os.tmpdir(),'order-desk-test-'));
+process.env.DATABASE_URL='';process.env.DATA_DIR=path.join(dir,'db');process.env.OUTPUT_DIR=dir;
+let db;const exercised=new Set();
+async function cmd(...args){exercised.add(args[0]);return run(db,args);}
+async function bad(args,re){await assert.rejects(()=>run(db,args),re);}
+function cli(script,args=[],expect=0){const r=spawnSync(process.execPath,[path.join(REPO_ROOT,'scripts',script),...args],{cwd:REPO_ROOT,env:process.env,encoding:'utf8'});assert.equal(r.status,expect,r.stderr||r.stdout);return r.stdout;}
+const actor='--actor=Test Operator';const now=new Date().toISOString().slice(0,10);
+try{
+ db=await getDb();await migrate(db);assert.equal((await migrate(db)).ran.length,0);
+ await bad(['orders'],/Initialise/);await cmd('init','Testing Merchant',actor);await assert.rejects(()=>seed(db),/real workspace/);
+ await db.query('delete from workspace');await seed(db);await seed(db);
+ assert.equal((await db.query('select count(*)::int n from orders'))[0].n,4);
+ await bad(['init','Second Merchant',actor],/already/);
+ assert.equal(cents('19.99'),1999);assert.throws(()=>cents('1.234'),/Invalid/);assert.throws(()=>date('2026-02-30','date'),/Invalid/);
+ assert.equal(parseCsv('\ufeffA,B\r\n"x,y","line\n""two"""\r\n')[0].B,'line\n"two"');
+ for(const csv of ['A,A\nx,y','A,B\nx','A\n"open'])assert.throws(()=>parseCsv(csv));
+ await cmd('help');await cmd('channels');await cmd('products');
+ const channel=await cmd('add-channel','Testing',actor);const product=await cmd('add-product','TEST-SKU','--name=Test product',actor);
+ const order=await cmd('add-order','TEST-1','--channel=testing','--customer=Test Buyer','--currency=NZD','--ordered=2026-01-01','--ship-by=2026-01-03','--deliver-by=2026-01-06',actor);
+ const l=await cmd('add-line','test-1','--sku=test-sku','--line=TEST-LINE','--qty=5','--unit=19.99',actor);
+ await bad(['ship',l.id,'--qty=-1',actor],/Invalid/);
+ await bad(['hold',order.id,'--reason=Waiting'],/actor/);
+ await bad(['orders','--typo=yes'],/Unknown option/);
+ await cmd('hold','TEST-1','--reason=Check address',actor);
+ const shipArgs=['ship',l.id,'--qty=2','--warehouse=Main','--carrier=Courier','--tracking=TRACK-TEST','--date=2026-01-04','--evidence=Docket 1',actor];
+ await bad(shipArgs,/held/);await cmd('release',order.id,'--evidence=Address confirmed',actor);
+ await cmd('set-dates',order.id,'--tax-year-end=2026-03-31','--retain-until=2033-03-31',actor);
+ const ship=await cmd(...shipArgs);
+ assert.equal((await cmd('show',order.id.slice(0,12))).order.status,'partial');
+ await bad([...shipArgs.filter(x=>!x.startsWith('--qty=')),'--qty=4'],/remaining/);
+ await bad(['cancel-line',l.id,'--qty=4','--evidence=Cancelled',actor],/unshipped/);
+ await bad(['deliver',ship.id,'--date=2025-01-01','--evidence=Invalid',actor],/check constraint/);
+ await cmd('deliver',ship.id,'--date=2026-01-05','--evidence=Signed receipt',actor);
+ await bad(['deliver',ship.id,'--date=2026-01-05','--evidence=Again',actor],/already/);
+ await cmd('cancel-line',l.id,'--qty=3','--evidence=Buyer cancelled remainder',actor);
+ assert.equal((await cmd('show',order.id)).order.remaining,0);
+ const ret=await cmd('return',l.id,'--qty=1','--reason=Damaged','--date=2026-01-06','--review-by=2026-01-10',actor);
+ await bad(['return',l.id,'--qty=2','--reason=Duplicate','--date=2026-01-06','--review-by=2026-01-10',actor],/exceeds/);
+ await bad(['resolve-return',ret.id,'--outcome=refunded','--date=2026-01-08','--evidence=No',actor],/check constraint/);
+ await cmd('resolve-return',ret.id,'--outcome=refund-requested','--date=2026-01-08','--evidence=Owner decision. Finance to act separately.',actor);
+ await bad(['resolve-return',ret.id,'--outcome=repair','--date=2026-01-08','--evidence=Again',actor],/already/);
+ const task=await cmd('log',order.id,'--owner=Morgan','--note=Check finance outcome','--due=2026-01-12',actor);
+ await cmd('complete-task',task.id,'--evidence=Reviewed by operator',actor);
+ await bad(['complete-task',task.id,'--evidence=Again',actor],/already/);
+ const all=await cmd('orders');assert(all.length>=5);assert.equal((await cmd('orders','--channel=Testing')).length,1);
+ for(const read of ['dispatch','promises','returns-due','attention','compliance','shipments','tasks','history'])assert(Array.isArray(await cmd(read)));
+ const compliance=await cmd('compliance');assert(compliance.some(r=>r.reference==='WEB-1043'&&r.rule==='NZ-RECORDS'));assert(compliance.some(r=>r.rule==='NZ-DELIVERY'));
+ const insights=await cmd('insights');assert.equal(insights.length,10);assert(insights[7].rows.every(r=>r.currency));
+ const csv=path.join(REPO_ROOT,'examples/goflow-lines.csv');const before=(await cmd('orders')).length;
+ const dry=await cmd('import','goflow',csv,'--dry-run',actor);assert.equal(dry.orders_inserted,2);assert.equal((await cmd('orders')).length,before);
+ assert.equal((await cmd('import','goflow',csv,actor)).orders_inserted,2);
+ assert.equal((await cmd('import','goflow',csv,actor)).orders_skipped,2);
+ const imported=await cmd('show','GF-1001');assert.equal(imported.lines.length,2);assert.equal(imported.order.hold_reason,'Import reconciliation required');
+ const conflict=path.join(dir,'conflict.csv');fs.writeFileSync(conflict,fs.readFileSync(csv,'utf8').replaceAll('GF-1001','NEW-ORDER').replace('Example Buyer Two','Changed Buyer'));
+ await bad(['import','goflow',conflict,actor],/conflict/);assert.equal((await cmd('orders')).length,before+2);
+ const mixed=path.join(dir,'mixed.csv');fs.writeFileSync(mixed,fs.readFileSync(csv,'utf8').replaceAll('GF-1001','NEW-ORDER').replace('2,55.00,Example Buyer,NZD','2,55.00,Example Buyer,AUD'));
+ await bad(['import','goflow',mixed,actor],/Conflicting/);
+ const duplicate=path.join(dir,'duplicate.csv');fs.writeFileSync(duplicate,fs.readFileSync(csv,'utf8').replace('Demo Outlet,B,','Demo Outlet,A,'));await bad(['import','goflow',duplicate,actor],/Duplicate source/);
+ const mapped=path.join(dir,'mapped.csv'),map=path.join(dir,'map.json');fs.writeFileSync(mapped,fs.readFileSync(csv,'utf8').replace('Order Number','My Reference'));fs.writeFileSync(map,JSON.stringify({reference:'My Reference'}));
+ assert.equal((await cmd('import','goflow',mapped,'--map='+map,actor)).orders_skipped,2);
+ await cmd('add-channel','Testing Two',actor);await bad(['orders','--channel=Test'],/Ambiguous/);
+ const out=await cmd('export');const bundle=JSON.parse(fs.readFileSync(out.file));assert.equal(bundle.tables.orders.length,before+2);assert(bundle.tables.audit_events.length>15);
+ await bad(['export','--out='+out.file],/EEXIST/);
+ for(const c of ['draft-update','weekly-review']){const r=await cmd(c,...(c==='draft-update'?[order.id]:[]));assert(fs.readFileSync(r.file,'utf8').includes('draft'));}
+ await assert.rejects(()=>db.query("update audit_events set actor='Tampered'"),/append-only/);
+ await assert.rejects(()=>db.query("update order_lines set cancelled=6 where id='40000000-0000-4000-8000-000000000001'"),/shipped units/);
+ for(const name of Object.keys(help))assert(exercised.has(name),'Unexercised command: '+name);
+ await db.close();db=null;
+ const machine=JSON.parse(cli('orders.mjs',['orders','--json']));assert.equal(machine.length,before+2);
+ cli('orders.mjs',['orders','--channel=Test'],1);
+ cli('view.mjs');cli('docs.mjs');
+ const view=fs.readFileSync(path.join(dir,'views/week.html'),'utf8');assert(view.includes('Weekly order desk'));assert(!view.includes('<form'));
+ assert(fs.readdirSync(path.join(dir,'docs-out/order-handover')).length===before+2);
+ // Renderer must escape imported strings, not turn them into active markup.
+ const {table}=await import('./lib/render.mjs');assert(table([{name:'<script>alert(1)</script>'}]).includes('&lt;script&gt;'));
+ console.log(`PASS: ${Object.keys(help).length} CLI commands; quantities, holds, evidence, import rollback, repeat imports, currency grouping, drafts and HTML reports`);
+}finally{if(db)await db.close();fs.rmSync(dir,{recursive:true,force:true});}

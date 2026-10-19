@@ -1,11 +1,48 @@
 [
   {
-    "name": "example",
-    "title": "TODO(author): the first document this industry must produce",
-    "for_each": "select gen_random_uuid() as id, 'Example' as name",
-    "file": "name",
+    "name": "order-handover",
+    "title": "Order handover",
+    "for_each": "select id,reference from orders order by reference",
+    "file": "reference",
     "sections": [
-      { "title": "Details", "sql": "select 'replace me' as item, $1::text as record_id" }
+      {
+        "title": "Order",
+        "sql": "select reference,channel,customer,currency,ship_by,deliver_by,status,hold_reason from order_summary where id=$1"
+      },
+      {
+        "title": "Line quantities",
+        "sql": "select line_ref,sku,product,quantity,cancelled,shipped,remaining from line_balances where order_id=$1"
+      },
+      {
+        "title": "Follow-ups",
+        "sql": "select owner,note,due_on,completed_on from tasks where order_id=$1"
+      }
+    ]
+  },
+  {
+    "name": "dispatch-docket",
+    "title": "Dispatch docket",
+    "for_each": "select id,tracking from shipments order by shipped_on",
+    "file": "tracking",
+    "sections": [
+      {
+        "title": "Dispatch record",
+        "note": "Internal record of dispatch supplied by the operator. This is not a carrier label or proof of delivery.",
+        "sql": "select o.reference,p.sku,s.quantity,s.warehouse,s.carrier,s.tracking,s.shipped_on,s.delivered_on,s.evidence from shipments s join order_lines l on l.id=s.line_id join orders o on o.id=l.order_id join products p on p.id=l.product_id where s.id=$1"
+      }
+    ]
+  },
+  {
+    "name": "return-review",
+    "title": "Return review",
+    "for_each": "select r.id,o.reference from returns r join order_lines l on l.id=r.line_id join orders o on o.id=l.order_id",
+    "file": "reference",
+    "sections": [
+      {
+        "title": "Case and decision",
+        "note": "Internal decision record. No payment, customer message or replacement order has been issued.",
+        "sql": "select o.reference,p.sku,r.quantity,r.reason,r.opened_on,r.review_by,r.outcome,r.evidence,r.resolved_on from returns r join order_lines l on l.id=r.line_id join orders o on o.id=l.order_id join products p on p.id=l.product_id where r.id=$1"
+      }
     ]
   }
 ]
