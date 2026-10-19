@@ -41,7 +41,7 @@ DATABASE_URL selects private Postgres. Without it, PGlite stores the database in
 - /attention: assign overdue order and follow-up work.
 - /weekly-review: draft the Monday review from attention, dispatch and returns.
 
-[CLI reference](docs/cli.md). Every command supports --json. Unique identifier prefixes and case-insensitive names work. Ambiguous matches list candidates and exit with an error. Full line IDs avoid ambiguity when several orders use line number 1.
+36 workflow commands ship in .claude/commands, backed by 32 CLI operations. [CLI reference](docs/cli.md). Every command supports --json. Unique identifier prefixes and case-insensitive names work. Ambiguous matches list candidates and exit with an error. Full line IDs avoid ambiguity when several orders use line number 1.
 
 ## Bring your Goflow orders
 
