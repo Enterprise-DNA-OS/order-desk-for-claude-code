@@ -6,6 +6,6 @@ Checked 19 October 2026 on Linux, Node 22.23.1.
 - npm run demo: PASS, three captured command runs, three dashboards and seven documents from fictional data.
 - scripts/postgres-smoke.mjs: PASS on a disposable PostgreSQL database, including migrations, repeatable seed, all reads, quantity guards, import rollback and a dispatch mutation. The script requires TEST_DATABASE_URL, creates a unique schema and removes only that schema.
 - Headless Chromium: the weekly HTML dashboard inspected at desktop size, no horizontal page overflow and no action forms.
-- The GitHub Actions workflow runs npm test and npm run demo on Windows and Linux using Node 22. Its remote result is checked after the private push.
+- The GitHub Actions workflow runs npm test and npm run demo on Windows and Linux using Node 22. The first remote run did not start: GitHub reported an organization billing or spending-limit block. No Windows execution result is claimed. Run: https://github.com/Enterprise-DNA-OS/order-desk-for-claude-code/actions/runs/39338297393 .
 
 No live customer database or third-party write is involved. Prices are checked against the vendor's current browser-rendered calculator. Brand lint passes the README, switch guide and compliance notes.
